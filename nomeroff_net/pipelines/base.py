@@ -20,7 +20,7 @@ from typing import Any, Dict, Optional, Union
 from collections import Counter
 from nomeroff_net.tools import promise_all
 from nomeroff_net.tools import chunked_iterable
-from nomeroff_net.image_loaders import BaseImageLoader, DumpyImageLoader, image_loaders_map
+from nomeroff_net.image_loaders import BaseImageLoader, image_loaders_map, OpencvImageLoader
 
 
 def may_by_empty_method(func):
@@ -157,12 +157,7 @@ class Pipeline(AccuracyTestPipeline):
 
     default_input_names = None
 
-    def __init__(
-        self,
-        task: str = "",
-        image_loader: Optional[Union[str, BaseImageLoader]] = None,
-        **kwargs,
-    ):
+    def __init__(self, task: str = "", image_loader: Optional[Union[str, BaseImageLoader]] = None, **kwargs):
         """
         TODO: write description
         """
@@ -171,22 +166,21 @@ class Pipeline(AccuracyTestPipeline):
 
         self._preprocess_params, self._forward_params, self._postprocess_params = self.sanitize_parameters(**kwargs)
 
-    @staticmethod
-    def _init_image_loader(image_loader):
+    def _init_image_loader(self, image_loader):
         """
-        TODO: write description
+        Инициализация загрузчика изображений
         """
         if image_loader is None:
-            image_loader_class = DumpyImageLoader
-        elif type(image_loader) == str:
-            image_loader_class = image_loaders_map.get(image_loader, None)
-            if image_loader is None:
-                raise ValueError(f"{image_loader} not in {image_loaders_map.keys()}.")
-        elif issubclass(image_loader, BaseImageLoader):
-            image_loader_class = image_loader
-        else:
-            raise TypeError(f"The image_loader type must by in None, BaseImageLoader, str")
-        return image_loader_class()
+            return OpencvImageLoader()
+        if isinstance(image_loader, str):
+            if image_loader in image_loaders_map:
+                return image_loaders_map[image_loader]()
+            raise ValueError(f"Unknown image loader: {image_loader}")
+        if isinstance(image_loader, BaseImageLoader):
+            return image_loader
+        if callable(image_loader):
+            return image_loader()
+        raise ValueError(f"Invalid image loader: {image_loader}")
 
     def sanitize_parameters(self, **pipeline_parameters):
         """

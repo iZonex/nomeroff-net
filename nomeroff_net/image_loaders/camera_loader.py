@@ -1,14 +1,18 @@
 """
-python3 -m nomeroff_net.image_loaders.opencv_loader
+python3 -m nomeroff_net.image_loaders.camera_loader
 """
-import os
 import cv2
 import numpy as np
+from typing import Union
 from .base import BaseImageLoader
 
 
-class OpencvImageLoader(BaseImageLoader):
-    def load(self, img):
+class CameraImageLoader(BaseImageLoader):
+    """
+    Загрузчик изображений для работы с камерой и numpy массивами
+    """
+    
+    def load(self, img: Union[str, np.ndarray]) -> np.ndarray:
         """
         Загружает изображение из файла или numpy массива
         
@@ -22,23 +26,22 @@ class OpencvImageLoader(BaseImageLoader):
             ValueError: если изображение не удалось загрузить
         """
         if isinstance(img, np.ndarray):
-            # Если передан numpy массив в BGR формате, конвертируем в RGB
-            return img[..., ::-1]
+            # Если передан numpy массив, конвертируем из BGR в RGB
+            return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         elif isinstance(img, str):
             # Если передан путь к файлу
             image = cv2.imread(img)
             if image is None:
                 raise ValueError(f"Не удалось загрузить изображение из {img}")
-            # Конвертируем из BGR в RGB
-            return image[..., ::-1]
+            return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         else:
             raise ValueError(f"Неподдерживаемый тип входных данных: {type(img)}")
 
 
 if __name__ == "__main__":
+    import os
     current_dir = os.path.dirname(os.path.abspath(__file__))
     img_file = os.path.join(current_dir, "../../data/examples/oneline_images/example1.jpeg")
 
-    image_loader = OpencvImageLoader()
-    loaded_img = image_loader.load(img_file)
-    print("Loaded image shape:", loaded_img.shape)
+    image_loader = CameraImageLoader()
+    loaded_img = image_loader.load(img_file) 
